@@ -90,13 +90,6 @@ g++ -Wall -O2 -o TreeIndex.out run.cpp DataVector.cpp TreeIndex.cpp
 ./TreeIndex.out
 ```
 
-### Interactive Configuration
-
-The program will prompt you for:
-1. **Leaf Size**: Number of vectors per leaf node (default: 200)
-2. **Tree Type**: Choose between KD-Tree (1) or RP-Tree (2)
-3. **K Value**: Number of nearest neighbors to find
-4. **Test Cases**: Number of test vectors to process
 
 ## 📊 Dataset Format
 
@@ -104,13 +97,6 @@ The program will prompt you for:
 - **CSV Files**: Comma-separated values
 - **Vector Format**: Each row represents a vector, each column a dimension
 - **Header**: Optional (will be skipped if present)
-
-### Example Dataset
-```csv
-1.2,3.4,5.6,7.8
-2.1,4.3,6.5,8.7
-3.0,5.2,7.4,9.6
-```
 
 ## 🎯 Performance Characteristics
 
@@ -134,55 +120,6 @@ The program will prompt you for:
 - **Clustering**: Group similar data points
 - **Machine Learning**: Preprocessing and feature matching
 
-## 📈 Performance Tips
 
-1. **Leaf Size Tuning**: 
-   - Smaller leaves: Faster search, more memory
-   - Larger leaves: Slower search, less memory
-   - Default (200) works well for most cases
-
-2. **Tree Selection**:
-   - Use KD-Tree for low-dimensional data (< 20D)
-   - Use RP-Tree for high-dimensional data (> 20D)
-
-3. **Dataset Preparation**:
-   - Normalize vectors for consistent distance calculations
-   - Remove duplicate vectors to improve tree efficiency
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Compilation Errors**:
-   - Ensure GCC/G++ is installed and in PATH
-   - Check C++11 support: `g++ --version`
-
-2. **Memory Issues**:
-   - Reduce leaf size for large datasets
-   - Process data in smaller batches
-
-3. **Performance Issues**:
-   - Use appropriate tree type for data dimensionality
-   - Optimize leaf size based on dataset characteristics
-
-## 🤝 Contributing
-
-This project is designed for educational and research purposes. Feel free to:
-- Report bugs and issues
-- Suggest improvements
-- Submit pull requests
-- Use in your own projects
-
-## 📚 References
-
-- **KD-Tree**: Bentley, J. L. (1975). Multidimensional binary search trees used for associative searching
-- **RP-Tree**: Dasgupta, S., & Freund, Y. (2008). Random projection trees and low dimensional manifolds
-- **KNN Algorithm**: Cover, T., & Hart, P. (1967). Nearest neighbor pattern classification
-
-## 📄 License
-
-This project is provided as-is for educational and research purposes.
-
----
 
 **Built with ❤️ in C++** | **Performance-focused KNN implementation**
