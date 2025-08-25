@@ -122,4 +122,4 @@ g++ -Wall -O2 -o TreeIndex.out run.cpp DataVector.cpp TreeIndex.cpp
 
 
 
-**Built with ❤️ in C++** | **Performance-focused KNN implementation**
+**Built with ❤️ in C++ by Sarthak** | **Performance-focused KNN implementation**

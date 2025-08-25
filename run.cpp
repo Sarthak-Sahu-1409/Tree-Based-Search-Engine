@@ -6,11 +6,15 @@ using namespace std;
 
 int main()
 {   
+    // Interactive demo: build either a KDTree or an RPTree from a training set,
+    // then perform k-NN queries for a handful of test vectors.
+
     cout<<"Enter the value of the leafSize for each Node: ";
     int leafSize;
     cin>>leafSize;
-    KDTreeIndex &treeIndex_1 = KDTreeIndex::GetInstance(leafSize); // Get a reference to the KDTreeIndex instance
-    RPTreeIndex &treeIndex_2 = RPTreeIndex::GetInstance(leafSize); // Get a reference to the RPTreeIndex instance
+    // OOP: Singleton accessors return references to globally shared indices configured by leafSize.
+    KDTreeIndex &treeIndex_1 = KDTreeIndex::GetInstance(leafSize);
+    RPTreeIndex &treeIndex_2 = RPTreeIndex::GetInstance(leafSize);
     // Read dataset from file
 
     cout<<"Reading the training dataset"<<endl;

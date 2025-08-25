@@ -1,102 +1,109 @@
 #include "DataVector.h"
 using namespace std;
-// This is the implementation file for the DataVector class. It contains the definitions of the member functions of the class.
-// The DataVector class is a simple class that represents a vector of double value data.
-// All the member functions of the class are coded here. The member functions are defined using the scope resolution operator (::).
+// Implements small, value-type vector algebra utilities used throughout the KNN and tree code.
+// OOP highlights: value semantics (copy ctor, assignment), operator overloading (+, -, *),
+// and basic encapsulation of a numeric vector with behavior (norm, dist, dot, normalize).
 
-// The constructor of the DataVector class takes an integer argument, which is the dimension of the vector.
+// Constructor (OOP: object lifecycle)
+// Initializes storage to a fixed dimension; elements default-initialize to 0.0.
 DataVector::DataVector(int dimension)
 {
-    v.resize(dimension); // resize the vector to the given dimension
+    v.resize(dimension);
 }
 
-// The destructor of the DataVector class is defined here. It is a special member function of classes which deletes the object if it is no longer required.
+// Destructor (OOP: object lifecycle)
+// Explicit clear is not required (vector manages its own memory) but is harmless.
 DataVector::~DataVector()
 {
-    v.clear(); // clear the vector. This is not necessary as the vector will be automatically destroyed when the object is destroyed.
+    v.clear();
 }
 
-// The copy constructor of the DataVector class is defined here. It is a special member function of classes which initializes the object with a copy of another object.
-DataVector::DataVector(const DataVector &other) : v(other.v) {} // initialize the vector with a copy of the vector of the other object
+// Copy constructor (OOP: value semantics)
+// Deep-copies the internal storage.
+DataVector::DataVector(const DataVector &other) : v(other.v) {}
 
-// The assignment operator of the DataVector class is defined here. It is a special member function of classes which assigns the value of one object to another object.
+// Assignment operator (OOP: value semantics)
+// Handles self-assignment and copies underlying storage.
 DataVector &DataVector::operator=(const DataVector &other)
 {
-    if (this != &other) // check for self-assignment
+    if (this != &other)
     {
-        v = other.v; // assign the vector of the other object to the vector of this object
+        v = other.v;
     }
-    return *this; // return a reference to this object
+    return *this;
 }
 
-// The setDimension method of the DataVector class is defined here. It takes an integer argument and sets the dimension of the vector.
+// Resizes the underlying vector to the requested dimension.
 void DataVector::setDimension(int dimension)
 {
-    v.clear();           // clear the vector.  This is not necessary as the vector will be automatically resized when the object is resized.
-    v.resize(dimension); // resize the vector to the given dimension.
+    v.clear();
+    v.resize(dimension);
 }
 
-// The overloaded operator for addition of the DataVector class is defined here. It takes a DataVector argument and returns the sum of the vectors.
+// Operator+ (OOP: operator overloading)
+// Returns component-wise sum; dimensions must match.
 DataVector DataVector::operator+(const DataVector &other)
 {
-    if (v.size() != other.v.size()) // check if the vectors have th same dimension
+    if (v.size() != other.v.size())
     {
-        cout << "Error: vectors must have the same dimension" << endl; // print an error message. This is not necessary as the error will be handled by the calling function.
-        return DataVector();                                           // return an empty vector
+        cout << "Error: vectors must have the same dimension" << endl;
+        return DataVector();
     }
     else
     {
-        DataVector result; // create a new vector to store the result
+        DataVector result;
         for (int i = 0; i < v.size(); i++)
         {
-            result.v.push_back(v[i] + other.v[i]); // add the components of the vectors and store the result in the new vector
-        }
-        return result; // return the result. This is not necessary as the result will be automatically copied when returned.
-    }
-}
-
-// The overloaded operator for subtraction of the DataVector class is defined here. It takes a DataVector argument and returns the difference of the vectors.
-DataVector DataVector::operator-(const DataVector &other)
-{
-    if (v.size() != other.v.size()) // check if the vectors have th same dimension
-    {
-        cout << "Error: vectors must have the same dimension" << endl; // print an error message. This is not necessary as the error will be handled by the calling function.
-        return DataVector();                                           // return an empty vector
-    }
-    else
-    {
-        DataVector result; // create a new vector to store the result
-        for (int i = 0; i < v.size(); i++)
-        {
-            result.v.push_back(v[i] - other.v[i]); // subtract the components of the vectors and store the result in the new vector
+            result.v.push_back(v[i] + other.v[i]);
         }
         return result;
     }
 }
 
-// The overloaded operator for dot product of the DataVector class is defined here. It takes a DataVector argument and returns the dot product of the vectors.
+// Operator- (OOP: operator overloading)
+// Returns component-wise difference; dimensions must match.
+DataVector DataVector::operator-(const DataVector &other)
+{
+    if (v.size() != other.v.size())
+    {
+        cout << "Error: vectors must have the same dimension" << endl;
+        return DataVector();
+    }
+    else
+    {
+        DataVector result;
+        for (int i = 0; i < v.size(); i++)
+        {
+            result.v.push_back(v[i] - other.v[i]);
+        }
+        return result;
+    }
+}
+
+// Operator* (OOP: operator overloading)
+// Returns dot product; dimensions must match.
 double DataVector::operator*(const DataVector &other)
 {
     if (v.size() != other.v.size())
     {                                                                  // check if the vectors have the same dimension
-        cout << "Error: vectors must have the same dimension" << endl; // print an error message. This is not necessary as the error will be handled by the calling function.
+        cout << "Error: vectors must have the same dimension" << endl;
         return 0;
     }
     else
     {
-        double result = 0; // initialize the result to 0
+        double result = 0;
         for (int i = 0; i < v.size(); i++)
         {
-            result += v[i] * other.v[i]; // add the product of the components of the vectors to the result.We are using the overloading of the * operator to multiply the components of the vectors.
+            result += v[i] * other.v[i];
         }
         return result;
     }
 }
 
-// The print method of the DataVector class is defined here. It prints the vector.
+// Pretty-print components in a compact tuple form.
 void DataVector::print() const
 {
-    cout << "<"; // print the components of the vector
+    cout << "<";
     for (int i = 0; i < v.size() - 1; i++)
     {
         cout << v[i] << ","
@@ -107,66 +114,63 @@ void DataVector::print() const
     cout << endl;
 }
 
-// The norm method of the DataVector class is defined here. It takes a DataVector argument and returns the Euclidean norm of the vector.
+// Euclidean norm of this vector. Note: parameter is unused and retained for API compatibility elsewhere.
 double DataVector::norm(const DataVector &other)
 {
-    return sqrt((*this) * (*this)); // return the square root of the dot product of the vector with itself
+    return sqrt((*this) * (*this));
 }
 
-// The dist method of the DataVector class is defined here. It takes a DataVector argument and returns the Euclidean distance between the vectors.
+// Euclidean distance to another vector; validates dimensionality.
 double DataVector::dist(const DataVector &other) const
 {
     if (v.size() != other.v.size())
     { 
         cout<<v.size()<<" "<<other.v.size();
-        throw std::invalid_argument("Vectors must be of the same dimension");
+        throw invalid_argument("Vectors must be of the same dimension");
     }
     double distance = 0.0;
     for (size_t i = 0; i < v.size(); ++i)
     {
-        distance += std::pow(v[i] - other.v[i], 2);
+        distance += pow(v[i] - other.v[i], 2);
     }
 
-    return std::sqrt(distance);
-    // return the square root of the dot product of the difference of the vectors with itself
+    return sqrt(distance);
 }
 
-// The setComponent method of the DataVector class is defined here. It takes an integer index and a double value and sets the value of the component at the given index.
+// Bounds-checked setter; no-op with message if out of range.
 void DataVector::setComponent(int index, double value)
 {
-    if (index >= 0 && index < v.size()) // check if the index is within the range of the vector
+    if (index >= 0 && index < v.size())
     {
-        v[index] = value; // set the value of the component at the given index
+        v[index] = value;
     }
     else
     {
-        cout << "Error: Index out of range" << endl; // print an error message. This is not necessary as the error will be handled by the calling function.
+        cout << "Error: Index out of range" << endl;
     }
 }
 
-// The addComponent method of the DataVector class is defined here. It takes a double value and adds it to the vector.
+// Appends a new component at the end.
 void DataVector::addComponent(double value)
 {
-    v.push_back(value); // add the value to the vector
+    v.push_back(value);
 }
 
-// The getComponent method of the DataVector class is defined here. It takes an integer index and returns the value of the component at the given index.
+// Bounds-checked getter; returns 0 on invalid index (callers should preferably validate indices).
 double DataVector::getComponent(int index) const
 {
-    if (index >= 0 && index < v.size()) // check if the index is within the range of the vector
+    if (index >= 0 && index < v.size())
     {
-        return v[index]; // return the value of the component at the given index
+        return v[index];
     }
 
     else
     {   
-        // cout<<":"<<index <<":"<<v.size()<<":"<<endl;
-        // cout << "Error: Index out of range-1" << endl; // print an error message. This is not necessary as the error will be handled by the calling function.
         return 0;
     }
 }
 
-// The getDimension method of the DataVector class is defined here. It returns the dimension of the vector.
+// Current number of components.
 int DataVector::getDimension() const
 {
     return v.size();
@@ -176,21 +180,18 @@ double DataVector::getMedian(int dimension) const
 {
     if (dimension < 0 || dimension >= v.size())
     {
-        throw std::out_of_range("Dimension out of range");
+        throw out_of_range("Dimension out of range");
     }
 
-    // Make a copy of the vector elements along the specified dimension
+    // Copy the values and compute median without mutating original data
     vector<double> dimValues(v.size());
     for (size_t i = 0; i < v.size(); ++i)
     {
         dimValues[i] = v[i];
     }
 
-    // Sort the copied vector
     sort(dimValues.begin(), dimValues.end());
 
-    // If the size of the dimension is odd, return the middle element
-    // Otherwise, return the average of the two middle elements
     size_t midIndex = dimValues.size() / 2;
     if (dimValues.size() % 2 == 1)
     {
@@ -204,48 +205,45 @@ double DataVector::getMedian(int dimension) const
 
 void DataVector::readDataset(const string &filename, vector<DataVector> &dataset)
 {
-    // cout<<"reading"<<endl;
-    std::ifstream file(filename); // open the file
+    // Parse a CSV-like file of numeric values into a vector<DataVector>.
+    // Assumes each line contains comma-separated numeric components of one vector.
+    ifstream file(filename);
     if (!file.is_open())
     {
-        std::cerr << "Error: Unable to open file " << filename << std::endl;
+        cerr << "Error: Unable to open file " << filename << endl;
         return;
     }
 
-    std::string line; // string to store each line of the file
-    while (std::getline(file, line))
+    string line;
+    while (getline(file, line))
     {
-
-        // cout<<"readline"<<endl;
-        std::istringstream iss(line); // create a string stream from the line
+        istringstream iss(line);
 
         DataVector dataVector;
 
         double value;
         while (iss >> value)
         {
-            dataVector.addComponent(value); // add the value to the vector
+            dataVector.addComponent(value);
 
-            char comma; // variable to store the comma
+            char comma;
             if (iss >> comma && comma != ',')
             {
-                std::cerr << "Error: Invalid CSV format" << std::endl;
-                dataset.clear(); // clear the dataset
+                cerr << "Error: Invalid CSV format" << endl;
+                dataset.clear();
                 break;
             }
         }
 
-        // add the vector to the dataset
-        //  dataVector.print();
         dataset.push_back(dataVector);
     }
 
-    file.close(); // close the file
+    file.close();
 }
 
 bool DataVector::operator==(const DataVector &other) const
 {
-    // Compare the data vectors element-wise
+    // Element-wise equality (exact floating-point comparison by design).
     for (int i = 0; i < v.size(); ++i)
     {
         if (v[i] != other.v[i])
@@ -257,12 +255,12 @@ bool DataVector::operator==(const DataVector &other) const
     return true;
 }
 
-void DataVector::randomize()//randomly assign values btw -1 and 1 to each entry in vector
+// Fill components with independent samples in [-1, 1].
+void DataVector::randomize()// randomly assign values between -1 and 1 to each entry
 {
-    // Randomize the components of the vector
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> dis(-1.0, 1.0);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<double> dis(-1.0, 1.0);
 
     for (double &component : v)
     {
@@ -283,12 +281,13 @@ double DataVector::dot(const DataVector &other) const
 
 void DataVector::normalize() 
 {
+    // Scale vector to unit length (no-op if norm is 0).
     double norm = 0.0;
     for (double component : v)
     {
         norm += component * component;
     }
-    norm = std::sqrt(norm);
+    norm = sqrt(norm);
     for (double &component : v)
     {
         component /= norm;
