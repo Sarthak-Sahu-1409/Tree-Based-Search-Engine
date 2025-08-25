@@ -1,25 +1,23 @@
-// TreeIndex.cpp: Implements two spatial index structures used for approximate/accelerated NN search.
-// OOP highlights: two concrete subclasses (KDTreeIndex, RPTreeIndex) of the abstract interface in
-// TreeIndex.h; both manage lifetime of a Node-based tree, expose uniform Add/Remove/Search APIs,
-// and use the Singleton pattern (GetInstance) for global access with configurable leaf size.
+// Two tree indexes for faster nearest-neighbor search.
+// KDTreeIndex and RPTreeIndex both implement the TreeIndex interface.
+// They build a tree of nodes and provide Add/Remove/Search. A simple Singleton is used.
 
 #include <bits/stdc++.h>
 #include <random>
 #include "TreeIndex.h"
 using namespace std;
 
-// Process-wide random number generator for utilities that need randomness.
+// Random number generator used where needed.
 random_device rd;
 mt19937 gen(rd());
 uniform_real_distribution<double> dis(-1.0, 1.0);
 
-// --- KD Tree implementation ---
-// KDTreeIndex partitions space along axis-aligned hyperplanes. The split rule chooses the
-// dimension with maximum spread and splits at the median. Leaves hold up to M points.
+// --- KD Tree ---
+// Splits along coordinate axes. Pick the widest dimension and split at the median.
 
 void KDTreeIndex::AddData(const vector<DataVector> &newDataset)
 {
-    // Append new data and rebuild the tree to maintain search guarantees.
+    // Append and rebuild.
     dataset.insert(dataset.end(), newDataset.begin(), newDataset.end());
     
     if (root)
@@ -32,8 +30,7 @@ void KDTreeIndex::AddData(const vector<DataVector> &newDataset)
 
 void KDTreeIndex::RemoveData(const vector<DataVector> &dataToRemove)
 {
-    // Linear remove-by-value (exact equality) followed by rebuild. For large datasets,
-    // a lazy delete or rebuild-once batch strategy would be preferable.
+    // Remove exact matches, then rebuild. (Simple but not the fastest.)
     for(const DataVector &data : dataToRemove)
     {
         for(int i = 0; i < dataset.size(); i++)
@@ -64,7 +61,7 @@ void KDTreeIndex::Search(const DataVector &testVector, int k)
     vector<int> nearestIndices;
     vector<double> distances;
 
-    // Best-first search over the built KD tree; collects up to k nearest indices and distances.
+    // Traverse the tree and collect up to k nearest.
     searchTree(root, testVector, k, nearestIndices, distances);
 
     cout << "Nearest neighbors:" << endl;
@@ -72,14 +69,11 @@ void KDTreeIndex::Search(const DataVector &testVector, int k)
     {
         cout << "Neighbor " << i + 1 << ": Index = " << nearestIndices[i] << endl;
         cout<<" Distance = " << distances[i] << endl;
-        // cout<<"Vector: ";
-        // dataset[nearestIndices[i]].print();
         cout<<endl;
     }
 }
 
-// Iterative tree traversal: descend to a candidate leaf, then backtrack while checking whether
-// crossing the split hyperplane could reveal closer points. Maintains a simple k-best buffer.
+// Go down to a candidate leaf, then backtrack when the other side might be closer.
 void KDTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, vector<int>& nearestIndices, vector<double>& distances) {
     if (node == nullptr) {
         return;
@@ -88,7 +82,7 @@ void KDTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
     stack<Node*> path;
     Node* current = node;
 
-    // Traverse down to a leaf guided by split comparisons
+    // Go down by comparing the split value.
     while (current != nullptr) {
         path.push(current);
         if (current->vectorIndices.empty()) {
@@ -103,16 +97,16 @@ void KDTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
     double bestDistance = numeric_limits<double>::infinity();
     Node* bestNode = nullptr;
 
-    // Track which indices we've already inserted to avoid duplicates
+    // Avoid duplicates.
     unordered_set<int> addedIndices;
 
-    // Backtrack: evaluate candidate points and decide whether to explore the opposite branch
+    // Backtrack and check if the other side can beat the best distance.
     while (!path.empty()) {
         current = path.top();
         path.pop();
 
         for (int index : current->vectorIndices) {
-            if (index < dataset.size()) { // Ensure index is within bounds
+            if (index < dataset.size()) {
                 double distance = testVector.dist(dataset[index]);
                 if (nearestIndices.size() < k) {
                     if (addedIndices.find(index) == addedIndices.end()) {
@@ -142,11 +136,11 @@ void KDTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
             }
         }
 
-        // Distance to the splitting hyperplane at this node along the split dimension
+        // Distance to the split hyperplane for this node.
         if (!current->vectorIndices.empty()) {
             double splitDistance = abs(testVector.getComponent(current->splitDim) - dataset[current->vectorIndices[0]].getComponent(current->splitDim));
 
-            // If the distance to the splitting hyperplane is less than the best distance, search the other side of the tree
+            // If the other side might be closer, walk down that side as well.
             if (splitDistance < bestDistance) {
                 if (testVector.getComponent(current->splitDim) <= dataset[current->vectorIndices[0]].getComponent(current->splitDim)) {
                     current = current->rightChild;
@@ -167,7 +161,7 @@ void KDTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
         }
     }
 
-    // Finalize results sorted by ascending distance
+    // Sort by distance.
     vector<pair<int, double>> nearestPairs;
     for (int i = 0; i < nearestIndices.size(); ++i) {
         nearestPairs.push_back(make_pair(nearestIndices[i], distances[i]));
@@ -176,7 +170,7 @@ void KDTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
         return a.second < b.second;
     });
 
-    // Update the nearest indices and distances
+    // Write back ordered results.
     for (int i = 0; i < nearestPairs.size(); ++i) {
         nearestIndices[i] = nearestPairs[i].first;
         distances[i] = nearestPairs[i].second;
@@ -190,7 +184,7 @@ void KDTreeIndex::buildTree(Node *&node, const vector<int> &indices)
         return;
     }
 
-    // Leaf termination: fewer than M points
+    // Stop if this node is small enough.
     if (indices.size() < M)
     {
         node->isLeaf = true;
@@ -202,7 +196,7 @@ void KDTreeIndex::buildTree(Node *&node, const vector<int> &indices)
     
     node->vectorIndices = indices;
     
-    // Stable partition by split rule into left/right children
+    // Split into left/right by the rule.
     vector<int> leftIndices, rightIndices;
     for (int index : indices)
     {
@@ -218,11 +212,11 @@ void KDTreeIndex::buildTree(Node *&node, const vector<int> &indices)
     
      if (leftIndices.empty() || rightIndices.empty())
     {
-        // Degenerate split; stop splitting further
+        // Give up splitting if it would be empty on one side.
         return;
     }
 
-    // Recursively build children
+    // Build children.
     node->splitDim = splitDim;
     node->leftChild = new Node();
     node->rightChild = new Node();
@@ -230,7 +224,7 @@ void KDTreeIndex::buildTree(Node *&node, const vector<int> &indices)
     buildTree(node->rightChild, rightIndices);
 }
 
-// Choose axis-aligned split: pick dimension of max spread; threshold at median.
+// Choose the axis with the widest spread; split at the median.
 function<bool(const DataVector &)> KDTreeIndex::ChooseRule(const vector<int> &indices, int &splitDim) {
     if (indices.empty()) {
         throw invalid_argument("Empty subset");
@@ -240,22 +234,18 @@ function<bool(const DataVector &)> KDTreeIndex::ChooseRule(const vector<int> &in
     vector<double> maxVals(numDims, numeric_limits<double>::lowest());
     vector<double> minVals(numDims, numeric_limits<double>::max());
 
-    // Compute per-dimension min/max on the subset
+    // Track min/max per dimension over the subset.
     for (int index : indices) {
         for (int i = 0; i < numDims; ++i) {
             double val = dataset[index].getComponent(i);
-            if (val > maxVals[i]) {
-                maxVals[i] = val;
-            }
-            if (val < minVals[i]) {
-                minVals[i] = val;
-            }
+            if (val > maxVals[i]) { maxVals[i] = val; }
+            if (val < minVals[i]) { minVals[i] = val; }
         }
     }
     
     double maxSpread = numeric_limits<double>::lowest();
 
-    // Choose dimension with maximum spread
+    // Pick the largest spread.
     for (int i = 0; i < numDims; ++i) {
         double spread = maxVals[i] - minVals[i];
         if (spread > maxSpread) {
@@ -264,7 +254,7 @@ function<bool(const DataVector &)> KDTreeIndex::ChooseRule(const vector<int> &in
         }
     }
 
-    // Compute median threshold along the chosen dimension
+    // Median along the chosen axis.
     vector<double> dimVals;
     for (int index : indices) {
         dimVals.push_back(dataset[index].getComponent(splitDim));
@@ -272,7 +262,7 @@ function<bool(const DataVector &)> KDTreeIndex::ChooseRule(const vector<int> &in
     sort(dimVals.begin(), dimVals.end());
     double median = dimVals[dimVals.size() / 2];
 
-    // Split rule: goes left if value <= median
+    // Go left if value <= median.
     return [splitDim, median](const DataVector& vec) {
         return vec.getComponent(splitDim) <= median;
     };
@@ -289,13 +279,13 @@ void KDTreeIndex::MakeTree()
     if (!dataset.empty())
     {
         vector<int> indices(dataset.size());
-        iota(indices.begin(), indices.end(), 0); // 0..n-1 indices of dataset
+        iota(indices.begin(), indices.end(), 0); // 0..n-1
         root = new Node();
         buildTree(root, indices);
     }
 }
 
-// Singleton accessor (OOP: Singleton pattern)
+// Singleton access (one global per leaf size parameter).
 KDTreeIndex &KDTreeIndex::GetInstance(int leafSize)
 {
     static KDTreeIndex instance(leafSize);
@@ -337,13 +327,12 @@ double uniform_random(double min, double max)
     return min + static_cast<double>(rand()) / (static_cast<double>(RAND_MAX / (max - min)));
 }
 
-// --- RP Tree implementation ---
-// RPTreeIndex uses random projections and median thresholding with an additional random shift (delta)
-// to reduce worst-case degeneration on structured data. This often balances trees better for high-dim data.
+// --- RP Tree ---
+// Uses a random direction and a small random shift. Often balances better for high-D data.
 
 void RPTreeIndex::AddData(const vector<DataVector> &newDataset)
 {
-    // Append and rebuild, mirroring KDTreeIndex semantics.
+    // Append and rebuild (same as KDTree).
     dataset.insert(dataset.end(), newDataset.begin(), newDataset.end());
     
     if (root)
@@ -356,7 +345,7 @@ void RPTreeIndex::AddData(const vector<DataVector> &newDataset)
 
 void RPTreeIndex::RemoveData(const vector<DataVector> &dataToRemove)
 {
-    // Linear remove followed by rebuild (same caveat as KDTree).
+    // Remove and rebuild (simple approach).
     for(const DataVector &data : dataToRemove)
     {
         for(int i = 0; i < dataset.size(); i++)
@@ -393,14 +382,11 @@ void RPTreeIndex::Search(const DataVector &testVector, int k)
     for (int i = 0; i < nearestIndices.size(); ++i)
     {
         cout << "Neighbor " << i + 1 << ": Index = " << nearestIndices[i] <<endl;
-        //  ", Distance = " << distances[i] << endl;
-        // cout<<"Vector: ";
-        // dataset[nearestIndices[i]].print();
         cout<<endl;
     }
 }
 
-// Same search strategy as KDTreeIndex; only the splitting rule differs.
+// Same search idea as KDTree; only the split rule differs.
 void RPTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, vector<int>& nearestIndices, vector<double>& distances) {
     if (node == nullptr) {
         return;
@@ -409,7 +395,7 @@ void RPTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
     stack<Node*> path;
     Node* current = node;
 
-    // Traverse down to a leaf guided by split comparisons
+    // Go down by comparing the split value.
     while (current != nullptr) {
         path.push(current);
         if (current->vectorIndices.empty()) {
@@ -425,16 +411,16 @@ void RPTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
     double bestDistance = numeric_limits<double>::infinity();
     Node* bestNode = nullptr;
 
-    // Track which indices we've already inserted to avoid duplicates
+    // Avoid duplicates.
     unordered_set<int> addedIndices;
 
-    // Backtrack: evaluate candidate points and decide whether to explore the opposite branch
+    // Backtrack and check if the other side can beat the best distance.
     while (!path.empty()) {
         current = path.top();
         path.pop();
 
         for (int index : current->vectorIndices) {
-            if (index < dataset.size()) { // Ensure index is within bounds
+            if (index < dataset.size()) {
                 double distance = testVector.dist(dataset[index]);
                 if (nearestIndices.size() < k) {
                     if (addedIndices.find(index) == addedIndices.end()) {
@@ -463,11 +449,11 @@ void RPTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
             }
         }
 
-        // Distance to the splitting hyperplane at this node along the split dimension
+        // Distance to the split hyperplane for this node.
         if (!current->vectorIndices.empty()) {
             double splitDistance = abs(testVector.getComponent(current->splitDim) - dataset[current->vectorIndices[0]].getComponent(current->splitDim));
 
-            // If the distance to the splitting hyperplane is less than the best distance, search the other side of the tree
+            // If the other side might be closer, walk down that side as well.
             if (splitDistance < bestDistance) {
                 if (testVector.getComponent(current->splitDim) <= dataset[current->vectorIndices[0]].getComponent(current->splitDim)) {
                     current = current->rightChild;
@@ -488,7 +474,7 @@ void RPTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
         }
     }
 
-    // Finalize results sorted by ascending distance
+    // Sort by distance.
     vector<pair<int, double>> nearestPairs;
     for (int i = 0; i < nearestIndices.size(); ++i) {
         nearestPairs.push_back(make_pair(nearestIndices[i], distances[i]));
@@ -497,7 +483,7 @@ void RPTreeIndex::searchTree(Node* node, const DataVector& testVector, int k, ve
         return a.second < b.second;
     });
 
-    // Update the nearest indices and distances
+    // Write back ordered results.
     for (int i = 0; i < nearestPairs.size(); ++i) {
         nearestIndices[i] = nearestPairs[i].first;
         distances[i] = nearestPairs[i].second;
@@ -511,7 +497,7 @@ void RPTreeIndex::buildTree(Node *&node, const vector<int> &indices)
         return;
     }
 
-    // Leaf termination: fewer than M points
+    // Stop if this node is small enough.
     if (indices.size() < M)
     {
         node->isLeaf = true;
@@ -524,7 +510,7 @@ void RPTreeIndex::buildTree(Node *&node, const vector<int> &indices)
     node->vectorIndices = indices;
     // cout<<indices.size()<<endl;
 
-    // Partition by split rule into left/right children
+    // Partition by split rule into left/right children.
     vector<int> leftIndices, rightIndices;
     for (int index : indices)
     {
@@ -540,11 +526,11 @@ void RPTreeIndex::buildTree(Node *&node, const vector<int> &indices)
     // cout<<leftIndices.size()<<endl;
      if (leftIndices.empty() || rightIndices.empty())
     {
-        // Degenerate split; stop splitting further
+        // Give up splitting if it would be empty on one side.
         return;
     }
 
-    // Recursively build children
+    // Build children.
     node->splitDim = splitDim;
     node->leftChild = new Node();
     node->rightChild = new Node();
@@ -552,7 +538,7 @@ void RPTreeIndex::buildTree(Node *&node, const vector<int> &indices)
     buildTree(node->rightChild, rightIndices);
 }
 
-// Choose random projection split: random unit vector v, random shift delta, threshold at median dot(v,·)+delta.
+// Random split: pick a random unit direction and a small random shift, then split at the median.
 function<bool(const DataVector &)> RPTreeIndex::ChooseRule(const vector<int> &indices, int &splitDim) {
      if (indices.empty()) {
         throw invalid_argument("Empty subset");
@@ -564,17 +550,16 @@ function<bool(const DataVector &)> RPTreeIndex::ChooseRule(const vector<int> &in
     mt19937 gen(rd());
     uniform_real_distribution<double> dis(-1.0, 1.0);
 
-    // Random unit direction v in R^d
+    // Random unit direction in R^d.
     DataVector v(numDims);
     for (int i = 0; i < numDims; ++i) {
         v.setComponent(i, dis(gen));
     }
 
-    // Normalize to get a unit vector
+    // Normalize to unit length.
     v.normalize();
-    // v.print();
 
-    // Heuristic: pick a far point y from an arbitrary x to scale delta
+    // Pick a far point to scale the random shift.
     double maxDistance = -1.0;
     DataVector x = dataset[indices[0]];
     DataVector y(numDims);
@@ -586,10 +571,10 @@ function<bool(const DataVector &)> RPTreeIndex::ChooseRule(const vector<int> &in
         }
     }
 
-    // Random shift improves balance and robustness on clustered data
+    // Small random shift improves balance on clustered data.
     double delta = dis(gen) * 6 * sqrt(x.dist(y)) / sqrt(numDims);
 
-    // Median along the projection defines the threshold
+    // Median along the projection.
     double medianDotProduct = 0.0;
     vector<double> dotProducts;
     for (int index : indices) {
@@ -603,7 +588,7 @@ function<bool(const DataVector &)> RPTreeIndex::ChooseRule(const vector<int> &in
         medianDotProduct = dotProducts[n / 2];
     }
     
-    // Split rule with random shift
+    // Go left if dot <= median + delta.
     return [v, medianDotProduct, delta](const DataVector& vec) {
         return vec.dot(v) <= (medianDotProduct + delta);
     };
@@ -621,13 +606,13 @@ void RPTreeIndex::MakeTree()
     if (!dataset.empty())
     {
         vector<int> indices(dataset.size());
-        iota(indices.begin(), indices.end(), 0); // 0..n-1 indices of dataset
+        iota(indices.begin(), indices.end(), 0); // 0..n-1
         root = new Node();
         buildTree(root, indices);
     }
 }
 
-// Singleton accessor (OOP: Singleton pattern)
+// Singleton access (one global per leaf size parameter).
 RPTreeIndex &RPTreeIndex::GetInstance(int leafSize)
 {
     static RPTreeIndex instance(leafSize);

@@ -6,13 +6,12 @@ using namespace std;
 
 int main()
 {   
-    // Interactive demo: build either a KDTree or an RPTree from a training set,
-    // then perform k-NN queries for a handful of test vectors.
+    // Build either a KDTree or an RPTree from a training set, then run a few queries.
 
     cout<<"Enter the value of the leafSize for each Node: ";
     int leafSize;
     cin>>leafSize;
-    // OOP: Singleton accessors return references to globally shared indices configured by leafSize.
+    // Singleton accessors return references configured by leafSize.
     KDTreeIndex &treeIndex_1 = KDTreeIndex::GetInstance(leafSize);
     RPTreeIndex &treeIndex_2 = RPTreeIndex::GetInstance(leafSize);
     // Read dataset from file
@@ -29,18 +28,6 @@ int main()
     dataVector_2.readDataset("test2.csv", dataset_2);
     cout<<"Reading the test dataset completed"<<endl;
 
-
-    // cout<<"Checking the ADD and REMOVE function"<<endl;
-    // vector<DataVector> dataset_3;
-    // DataVector dataVector_3;
-    // dataVector_3.readDataset("test3.csv", dataset_3);
-
-    // // treeIndex_1.AddData(dataset_3);
-    // // treeIndex_1.RemoveData(dataset_3);
-    // // treeIndex_2.AddData(dataset_3);
-    // // treeIndex_2.RemoveData(dataset_3);
-
-    // cout<<"Checking the ADD and REMOVE function completed"<<endl;
 
     cout<<"1. KDTree"<<endl;
     cout<<"2. RPTree"<<endl;
@@ -59,11 +46,6 @@ int main()
         cout<<"Making the KDTree"<<endl;
         treeIndex_1.AddData(dataset_1);
 
-        //to check the added and removed dataset
-        // treeIndex_1.AddData(dataset_3);
-        // treeIndex_1.RemoveData(dataset_3);
-        
-
         cout<<"Making the KDTree completed"<<endl;
 
         int value;
@@ -78,10 +60,6 @@ int main()
     else
     {   cout<<"Making the RPTree"<<endl;
         treeIndex_2.AddData(dataset_1);
-
-        //to check the added and removed dataset
-        // treeIndex_2.AddData(dataset_3);
-        // treeIndex_2.RemoveData(dataset_3);
 
         cout<<"Making the RPTree completed"<<endl;
 

@@ -3,10 +3,9 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <chrono> // include the chrono library to measure the time taken to find the nearest neighbors
+#include <chrono> // simple timing
 using namespace std;
-// Standalone KNN driver for a dense, small dataset.
-// kNearestNeighbors builds a distance list to every row, sorts, and returns the top-k rows.
+// Simple brute-force KNN: compute all distances, sort, take top-k.
 
 VectorDataset kNearestNeighbors(VectorDataset &dataset, DataVector &testVector, int k)
 {
@@ -53,41 +52,16 @@ int main()
     // dataset.readDataset("fmnist-test.csv");
     cout << "Dataset read successfully!" << endl;
 
-    // Ask for the dimension of the test vector from the user.
-    // The dimension should be equal to the number of columns in the dataset.
-    // int dimension=7;
-    // cout << "Enter the dimension of the test vector.";
-    // cout << "The dimension should be equal to the number of columns in the dataset:" << endl;
-    // cin >> dimension;
-
-    // Create a DataVector object to store the test vector.
-    // The dimension of the test vector is set to the value entered by the user.
-    // The components of the test vector are set by the user.
-    // The components of the test vector are set to 5.8 for testing purposes.
-    // DataVector testVector(dimension);
-    // cout << "Enter the values of the test vector:" << endl;
-
     // Read test vectors from file
     VectorDataset testvectorDataset;
     testvectorDataset.readDataset("test-vector.csv");
-
-    // Ask for the components of the test vector from the user.
-    // The components are set using the setComponent method of the DataVector class.
-    // for (int i = 0; i < dimension; i++)
-    // {
-    //     // cout << "Enter the value of the " << i + 1 << "th dimension: ";
-    //     // double x;
-    //     // cin >> x;
-    //     // testVector.setComponent(i, x);
-    //     testVector.setComponent(i, 5.8);
-    // }
 
     // Number of nearest neighbours to return (fixed here, could be interactive)
     int k=4;
     cout << "Enter the value of k i.e. the number of nearest neighbours you want to find: ";
     // cin >> k;
 
-    // Time the end-to-end KNN run for simple performance feedback
+    // Time the run
     int number=1;
     cout<<"Enter the number of test vectors you want to test:";
     // cin>>number;
@@ -108,7 +82,6 @@ int main()
         DataVector testVector = testvectorDataset.getVector(i);
         nearestNeighbors = kNearestNeighbors(dataset, testVector, k);
     }
-    // DataVector testVector(dimension);
 
     auto end = chrono::high_resolution_clock::now();
     cout << "Nearest neighbours found successfully!" << endl;

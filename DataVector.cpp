@@ -1,29 +1,24 @@
 #include "DataVector.h"
 using namespace std;
-// Implements small, value-type vector algebra utilities used throughout the KNN and tree code.
-// OOP highlights: value semantics (copy ctor, assignment), operator overloading (+, -, *),
-// and basic encapsulation of a numeric vector with behavior (norm, dist, dot, normalize).
+// A small vector type with common math helpers.
+// Uses normal C++ value semantics and a few operator overloads.
 
-// Constructor (OOP: object lifecycle)
-// Initializes storage to a fixed dimension; elements default-initialize to 0.0.
+// Create a vector with the given number of components.
 DataVector::DataVector(int dimension)
 {
     v.resize(dimension);
 }
 
-// Destructor (OOP: object lifecycle)
-// Explicit clear is not required (vector manages its own memory) but is harmless.
+// Clean up. (vector already frees its memory by itself.)
 DataVector::~DataVector()
 {
     v.clear();
 }
 
-// Copy constructor (OOP: value semantics)
-// Deep-copies the internal storage.
+// Copy from another DataVector.
 DataVector::DataVector(const DataVector &other) : v(other.v) {}
 
-// Assignment operator (OOP: value semantics)
-// Handles self-assignment and copies underlying storage.
+// Assign from another DataVector.
 DataVector &DataVector::operator=(const DataVector &other)
 {
     if (this != &other)
@@ -33,15 +28,14 @@ DataVector &DataVector::operator=(const DataVector &other)
     return *this;
 }
 
-// Resizes the underlying vector to the requested dimension.
+// Change number of components.
 void DataVector::setDimension(int dimension)
 {
     v.clear();
     v.resize(dimension);
 }
 
-// Operator+ (OOP: operator overloading)
-// Returns component-wise sum; dimensions must match.
+// Component-wise sum; sizes must match.
 DataVector DataVector::operator+(const DataVector &other)
 {
     if (v.size() != other.v.size())
@@ -60,8 +54,7 @@ DataVector DataVector::operator+(const DataVector &other)
     }
 }
 
-// Operator- (OOP: operator overloading)
-// Returns component-wise difference; dimensions must match.
+// Component-wise difference; sizes must match.
 DataVector DataVector::operator-(const DataVector &other)
 {
     if (v.size() != other.v.size())
@@ -80,8 +73,7 @@ DataVector DataVector::operator-(const DataVector &other)
     }
 }
 
-// Operator* (OOP: operator overloading)
-// Returns dot product; dimensions must match.
+// Dot product; sizes must match.
 double DataVector::operator*(const DataVector &other)
 {
     if (v.size() != other.v.size())
@@ -100,7 +92,7 @@ double DataVector::operator*(const DataVector &other)
     }
 }
 
-// Pretty-print components in a compact tuple form.
+// Print as <a, b, c>.
 void DataVector::print() const
 {
     cout << "<";
@@ -114,13 +106,13 @@ void DataVector::print() const
     cout << endl;
 }
 
-// Euclidean norm of this vector. Note: parameter is unused and retained for API compatibility elsewhere.
+// Euclidean length of this vector. (Parameter is ignored.)
 double DataVector::norm(const DataVector &other)
 {
     return sqrt((*this) * (*this));
 }
 
-// Euclidean distance to another vector; validates dimensionality.
+// Euclidean distance to another vector.
 double DataVector::dist(const DataVector &other) const
 {
     if (v.size() != other.v.size())
@@ -137,7 +129,7 @@ double DataVector::dist(const DataVector &other) const
     return sqrt(distance);
 }
 
-// Bounds-checked setter; no-op with message if out of range.
+// Set one component. Warn if index is out of range.
 void DataVector::setComponent(int index, double value)
 {
     if (index >= 0 && index < v.size())
@@ -150,13 +142,13 @@ void DataVector::setComponent(int index, double value)
     }
 }
 
-// Appends a new component at the end.
+// Add a new component at the end.
 void DataVector::addComponent(double value)
 {
     v.push_back(value);
 }
 
-// Bounds-checked getter; returns 0 on invalid index (callers should preferably validate indices).
+// Read one component. Returns 0 if index is invalid.
 double DataVector::getComponent(int index) const
 {
     if (index >= 0 && index < v.size())
@@ -170,7 +162,7 @@ double DataVector::getComponent(int index) const
     }
 }
 
-// Current number of components.
+// Number of components.
 int DataVector::getDimension() const
 {
     return v.size();
@@ -183,7 +175,7 @@ double DataVector::getMedian(int dimension) const
         throw out_of_range("Dimension out of range");
     }
 
-    // Copy the values and compute median without mutating original data
+    // Copy values and compute median without changing the original
     vector<double> dimValues(v.size());
     for (size_t i = 0; i < v.size(); ++i)
     {
@@ -205,8 +197,7 @@ double DataVector::getMedian(int dimension) const
 
 void DataVector::readDataset(const string &filename, vector<DataVector> &dataset)
 {
-    // Parse a CSV-like file of numeric values into a vector<DataVector>.
-    // Assumes each line contains comma-separated numeric components of one vector.
+    // Read a CSV where each line is one vector of numbers.
     ifstream file(filename);
     if (!file.is_open())
     {
@@ -243,7 +234,7 @@ void DataVector::readDataset(const string &filename, vector<DataVector> &dataset
 
 bool DataVector::operator==(const DataVector &other) const
 {
-    // Element-wise equality (exact floating-point comparison by design).
+    // Element-wise equality (exact float compare on purpose).
     for (int i = 0; i < v.size(); ++i)
     {
         if (v[i] != other.v[i])
@@ -255,8 +246,8 @@ bool DataVector::operator==(const DataVector &other) const
     return true;
 }
 
-// Fill components with independent samples in [-1, 1].
-void DataVector::randomize()// randomly assign values between -1 and 1 to each entry
+// Fill components with random values in [-1, 1].
+void DataVector::randomize()// randomly assign values between -1 and 1
 {
     random_device rd;
     mt19937 gen(rd());
@@ -281,7 +272,7 @@ double DataVector::dot(const DataVector &other) const
 
 void DataVector::normalize() 
 {
-    // Scale vector to unit length (no-op if norm is 0).
+    // Scale vector to unit length (skips if norm is 0).
     double norm = 0.0;
     for (double component : v)
     {

@@ -4,26 +4,24 @@
 #include <fstream>
 #include <sstream>
 using namespace std;
-// VectorDataset: thin container around vector<DataVector> with simple CSV ingestion.
-// OOP highlights: value semantics (copy/assign), cohesive responsibility (own/return DataVectors),
-// and a small API used by KNN and tree builders.
+// Holds a list of DataVector rows and knows how to read them from CSV.
 
-// Constructor: ensure container starts empty.
+// Start empty.
 VectorDataset::VectorDataset()
 {
     dataset.clear();
 }
 
-// Destructor: no manual resource management needed.
+// Nothing special to clean up.
 VectorDataset::~VectorDataset()
 {
     dataset.clear();
 }
 
-// Copy constructor (OOP: value semantics)
+// Copy whole dataset.
 VectorDataset::VectorDataset(const VectorDataset &other) : dataset(other.dataset) {}
 
-// Assignment operator (OOP: value semantics)
+// Assign whole dataset.
 VectorDataset &VectorDataset::operator=(const VectorDataset &other)
 {
     if (this != &other)
@@ -33,7 +31,7 @@ VectorDataset &VectorDataset::operator=(const VectorDataset &other)
     return *this;
 }
 
-// Read a file where each line is a CSV of numeric values forming one DataVector.
+// Read a file where each line is a CSV of numbers forming one DataVector.
 void VectorDataset::readDataset(const string filename)
 {
     ifstream file(filename);
@@ -70,25 +68,25 @@ void VectorDataset::readDataset(const string filename)
     file.close();
 }
 
-// Accessor: returns a copy by value (callers typically consume it).
+// Get a row by index (by value).
 DataVector VectorDataset::getVector(int index)
 {
     return dataset[index];
 }
 
-// Number of vectors loaded.
+// Number of rows.
 int VectorDataset::size()
 {
     return dataset.size();
 }
 
-// Remove all vectors.
+// Remove everything.
 void VectorDataset::clear()
 {
     dataset.clear();
 }
 
-// Append a vector to the dataset.
+// Append one row.
 void VectorDataset::push_back(const DataVector &dataVector)
 {
     dataset.push_back(dataVector);
