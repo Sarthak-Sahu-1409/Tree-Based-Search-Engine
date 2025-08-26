@@ -1,0 +1,118 @@
+Project: K-Nearest Neighbors (KNN) with KD-Tree and RP-Tree
+
+Github Link: https://github.com/Sarthak-Sahu-1409/Tree-Based-Search-Engine
+
+1. Objective
+- Provide a clear, reproducible C++ implementation of K-Nearest Neighbors (KNN) for numeric vector data.
+- Offer two indexing strategies to accelerate nearest-neighbor search compared to brute-force: KD-Tree (axis-aligned splits) and Random Projection Tree (RP-Tree; random hyperplane splits).
+- Include a simple baseline KNN driver and an interactive tree-based demo for evaluating accuracy, latency, and scalability on CSV datasets.
+
+2. Scope and Deliverables
+- Baseline brute-force KNN executable (scans the full dataset for each query).
+- Tree-indexed search demo supporting KD-Tree and RP-Tree.
+- Core value types and utilities: dense vector operations and dataset ingestion from CSV.
+- Build scripts and sample datasets to facilitate quick experiments.
+
+3. Data Model and Input Format
+- Each data point is a numeric vector of doubles.
+- Input files are CSV without a required header; each line represents one vector with comma-separated values. Example:
+  0.12,0.33,1.50
+  0.05,-0.23,0.77
+- Sample files included:
+  - testing.csv (reference dataset)
+  - test-vector.csv (queries)
+  - fmnist-test.csv (larger example dataset)
+
+4. System Design
+4.1 Core Types
+- DataVector: value-type wrapper around std::vector<double>, providing arithmetic (+, -), dot product, Euclidean norm, distance, normalization, and simple CSV ingestion helpers.
+- VectorDataset: container owning std::vector<DataVector> with CSV loading, indexing, and push-back operations.
+
+4.2 Indexing Interfaces and Implementations
+- TreeIndex interface (defined in TreeIndex.h) with operations: AddData, RemoveData, MakeTree (build), and Search.
+- KDTreeIndex: axis-aligned binary partitioning using the dimension of maximum spread; splits at median.
+- RPTreeIndex: partitions by projecting vectors onto a random direction with random shift; splits at median of projected values.
+- Both indices maintain configuration via a singleton accessor and perform backtracking search with pruning using distance bounds.
+
+4.3 Baseline Algorithm
+- Brute-force KNN (nearestneighbor.cpp):
+  - For each query vector, compute Euclidean distance to every dataset vector, sort by distance, and return the top-k neighbors.
+
+5. Algorithms and Complexity
+- Baseline KNN per query: O(n·d) distance evaluations plus O(n log n) sort, where n is dataset size and d is dimensionality.
+- KD-Tree / RP-Tree:
+  - Build: approximately O(n log n) using median splits.
+  - Query: average-case O(log n) per query in well-behaved, lower-dimensional data; may degrade toward O(n) in high dimensions or adversarial distributions.
+
+6. Build Instructions
+6.1 Prerequisites
+- C++17-compatible compiler (e.g., g++/clang++ on Linux/macOS; MSYS2/MinGW-w64 g++ or Visual Studio Build Tools on Windows).
+
+6.2 Using the provided Makefile (Linux/macOS)
+- make            # builds TreeIndex.out and immediately runs it
+- make clean      # removes build artifact
+
+6.3 Manual builds
+- Linux/macOS:
+  - g++ -std=c++17 -O2 -Wall -o nn nearestneighbor.cpp DataVector.cpp VectorDataset.cpp
+  - g++ -std=c++17 -O2 -Wall -o trees run.cpp DataVector.cpp VectorDataset.cpp TreeIndex.cpp
+- Windows (PowerShell, MinGW-w64):
+  - g++ -std=gnu++17 -O2 -Wall -o nn.exe nearestneighbor.cpp DataVector.cpp VectorDataset.cpp
+  - g++ -std=gnu++17 -O2 -Wall -o trees.exe run.cpp DataVector.cpp VectorDataset.cpp TreeIndex.cpp
+
+7. Execution and Usage
+7.1 Baseline KNN (Brute Force)
+- Executable: nearest_neighbor_program.exe (prebuilt) or nn/nn.exe (if built manually).
+- Behavior:
+  - Loads testing.csv as the reference dataset.
+  - Loads test-vector.csv as queries.
+  - Uses Euclidean distance and fixed k (default 4 in source; can be made interactive).
+  - Computes and prints nearest neighbors and total elapsed time.
+
+7.2 Tree-Based Demo (KD-Tree / RP-Tree)
+- Executable: TreeIndex.out (Linux/macOS) or trees.exe (Windows/manual build).
+- Interactive flow:
+  1) Enter leaf size (maximum points per leaf).
+  2) Provide training set path (e.g., test1.csv).
+  3) Provide test set path (e.g., test2.csv).
+  4) Choose index type: 1 for KDTree, 2 for RPTree.
+  5) Provide k and number of test queries to run.
+- Output: for each tested query, prints top-k neighbors and their distances, along with overall timing.
+
+8. Outputs and Outcome
+- Console output includes:
+  - Confirmation of dataset loading success.
+  - Nearest neighbors (vector contents) for each processed query.
+  - End-to-end timing in milliseconds for the search.
+- Outcome expectations:
+  - Baseline provides a correctness reference for small to medium datasets.
+  - KD-Tree/RP-Tree aim to reduce query time versus brute force when data is moderately low-dimensional and well-distributed.
+
+9. Quality, Testing, and Validation
+- Deterministic correctness can be verified by comparing top-k results between brute-force and tree-indexed queries on small datasets.
+- Timing comparisons (ms) are printed to assess performance gains as dataset size grows.
+- Common pitfalls:
+  - File path issues: ensure working directory contains the CSV files or provide absolute paths.
+  - k larger than dataset size: ensure k ≤ number of reference points.
+  - Query count larger than test set: adjust the number of processed queries accordingly.
+
+10. Limitations and Considerations
+- High-dimensional data reduces the effectiveness of spatial trees; performance can approach brute force.
+- No persistence layer; indices are built in memory each run.
+- Distance metric is Euclidean by default; alternative metrics require code extensions.
+
+11. Extensibility
+- Additional distance metrics (L1, cosine similarity) can be added by extending DataVector.
+- Tree persistence (serialization/deserialization) to reuse built indices across sessions.
+- Batch query processing and reporting aggregate statistics.
+- Parallelization of distance computations and/or tree construction.
+
+12. Repository Structure (key files)
+- DataVector.cpp / DataVector.h: dense vector math and helpers.
+- VectorDataset.cpp / VectorDataset.h: dataset container and CSV ingestion.
+- TreeIndex.cpp / TreeIndex.h: KD-Tree and RP-Tree implementations and interface.
+- nearestneighbor.cpp: baseline brute-force KNN.
+- run.cpp: interactive demo for tree-based search.
+- Makefile: Linux/macOS build for the tree demo.
+- testing.csv, test-vector.csv, fmnist-test.csv: example datasets.
+
